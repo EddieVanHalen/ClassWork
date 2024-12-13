@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import './Loading.css';
+import './Button.css';
 import { Card } from './Card/Card';
 
 export const CardBox = () => {
     const [characters, setCharacters] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(true);
+    const [nextPage, setNextPage] = useState(null);
+    const [prevPage, setPrevPage] = useState(null);
 
     const fetchCharacters = async (pageNum) => {
         setLoading(true);
@@ -14,11 +17,9 @@ export const CardBox = () => {
             const response = await fetch(`https://rickandmortyapi.com/api/character?page=${pageNum}`);
             const data = await response.json();
 
-            if (data.info.next === null) {
-                setHasMore(false);
-            }
-
-            setCharacters((prevCharacters) => [...prevCharacters, ...data.results]);
+            setNextPage(data.info.next);
+            setPrevPage(data.info.prev);
+            setCharacters(data.results);
         } catch (error) {
             console.log(error);
         } finally {
@@ -30,17 +31,23 @@ export const CardBox = () => {
         fetchCharacters(page);
     }, [page]);
 
-    const handleLoadMore = () => {
-        if (hasMore) {
+    const handleNextPage = () => {
+        if (nextPage) {
             setPage((prevPage) => prevPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (prevPage) {
+            setPage((prevPage) => prevPage - 1);
         }
     };
 
     let content;
 
     if (loading) {
-        content = <div>Loading</div>;
-    } else if (hasMore) {
+        content = <div className="loader"/>;
+    } else {
         content = (
             <>
                 <div style={{display: 'flex', flexWrap: 'wrap'}}>
@@ -48,26 +55,27 @@ export const CardBox = () => {
                         <Card key={person.id} person={person}/>
                     ))}
                 </div>
-                <button onClick={handleLoadMore}>
-                    Show More
-                </button>
-            </>
-        );
-    } else {
-        content = (
-            <>
-                <div>
-                    {characters.map((person) => (
-                        <Card key={person.id} person={person} />
-                    ))}
+
+                <div style={{marginTop: '20px'}}>
+                    <button
+                        onClick={handlePrevPage}
+                        disabled={!prevPage}
+                        className={!prevPage ? 'not-active' : 'btn'}
+                    >
+                        Previous
+                    </button>
+                    <button
+                        onClick={handleNextPage}
+                        disabled={!nextPage}
+                        className={!nextPage ? 'not-active' : 'btn'}
+                    >
+                        Next
+                    </button>
                 </div>
+
             </>
         );
     }
 
-    return (
-        <div>
-            {content}
-        </div>
-    );
+    return <div>{content}</div>;
 };
